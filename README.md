@@ -91,7 +91,7 @@ This project transfers metrics from Kafka to Prometheus:
 1. Start with Docker Compose:
    ```bash
    docker-compose up --build
-   ```bash
+   ```
 2. Check Prometheus metrics at:
 [`prometeus`](http://0.0.0.0:9090/graph?g0.expr=TotalMemory&g0.tab=0&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h).  
 
