@@ -7,6 +7,7 @@ import random
 import time
 import logging
 from kafka import KafkaProducer
+from kafka.errors import KafkaError
 from app.config import settings
 
 logging.basicConfig(
@@ -17,15 +18,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def create_kafka_producer():
-    try:
-        producer = KafkaProducer(
-            bootstrap_servers=settings.kafka_bootstrap_servers,
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
-        )
-        return producer
-    except Exception as e:
-        logger.error(f"Error while creating Kafka producer: {e}")
-        raise
+    """
+    Function to create KafkaProducer with retry logic.
+    This will keep trying to connect to Kafka until successful.
+    """
+    while True:
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=settings.kafka_bootstrap_servers,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            )
+            logger.info("Connected to Kafka successfully.")
+            return producer
+        except KafkaError as e:
+            logger.warning(f"Kafka broker is not available yet. Retrying in 5 seconds... Error: {e}")
+            time.sleep(5)  # Wait before retrying
 
 producer = create_kafka_producer()
 
@@ -58,7 +65,6 @@ def generate_metrics():
     }
     return metrics
 
-# Отправка данных в Kafka
 def send_metrics_to_kafka():
     while True:
         metrics = generate_metrics()
@@ -67,8 +73,8 @@ def send_metrics_to_kafka():
             logger.info(f"Sent metrics: {metrics}")
         except Exception as e:
             logger.error(f"Error sending message to Kafka: {e}")
-        time.sleep(10)  # Ждем 10 секунд перед отправкой новых метрик
+        time.sleep(10)
 
-# Запуск продюсера
+
 if __name__ == "__main__":
     send_metrics_to_kafka()
